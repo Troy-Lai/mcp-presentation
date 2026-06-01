@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP：AI 的"USB-C 接口" — 课堂展示</title>
+<style>
+/* ===== Reset ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #7c5cfc;
+  --primary-light: #a78bfa;
+  --secondary: #06b6d4;
+  --accent: #f472b6;
+  --green: #10b981;
+  --orange: #f59e0b;
+  --dark: #0a0a1a;
+  --dark2: #111128;
+  --dark3: #1a1a3e;
+  --text: #e8e8f0;
+  --text-muted: #9090b0;
+  --border: rgba(124, 92, 252, 0.15);
+  --slide-w: 1200px;
+  --slide-h: 675px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: #050510;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  overflow: hidden;
+  color: var(--text);
+  user-select: none;
+}
+
+/* ===== Container ===== */
+#presentation {
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+
+/* ===== Progress Bar ===== */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  z-index: 200;
+  transition: width 0.4s ease;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 10px rgba(124,92,252,0.5);
+}
+
+/* ===== Slide Base ===== */
+.slide {
+  position: absolute;
+  width: var(--slide-w); height: var(--slide-h);
+  background: var(--dark);
+  border-radius: 16px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(60px) scale(0.96);
+  transition: all 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px var(--border);
+}
+.slide.active {
+  opacity: 1; transform: translateX(0) scale(1); pointer-events: all;
+}
+
+/* ===== Top Bar ===== */
+.top-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  z-index: 10;
+}
+
+/* ===== Navigation ===== */
+#nav {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(17,17,40,0.92);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 10px 22px;
+  backdrop-filter: blur(16px);
+  z-index: 100;
+}
+.nav-btn {
+  background: none; border: none; cursor: pointer;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); font-size: 18px;
+  transition: background 0.2s;
+}
+.nav-btn:hover { background: rgba(124,92,252,0.2); }
+.nav-btn:disabled { opacity: 0.25; cursor: default; }
+#slide-counter { font-size: 13px; color: var(--text-muted); min-width: 45px; text-align: center; }
+.dot-row { display: flex; gap: 5px; }
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted); cursor: pointer;
+  transition: all 0.3s;
+}
+.dot.active { background: var(--primary); transform: scale(1.5); box-shadow: 0 0 8px rgba(124,92,252,0.5); }
+
+/* ===== Top-right toolbar ===== */
+#toolbar {
+  position: fixed; top: 18px; right: 22px;
+  display: flex; gap: 8px; z-index: 100;
+}
+.tb-btn {
+  background: rgba(17,17,40,0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 4px;
+}
+.tb-btn:hover { color: var(--text); border-color: rgba(124,92,252,0.4); background: rgba(17,17,40,0.95); }
+
+/* ===== Slide Inner ===== */
+.slide-inner {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  padding: 48px 60px;
+  position: relative;
+  overflow: hidden;
+}
+.label-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(124,92,252,0.12);
+  color: var(--primary-light);
+  border: 1px solid rgba(124,92,252,0.25);
+  border-radius: 20px;
+  padding: 3px 14px;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  width: fit-content;
+}
+.slide-title {
+  font-size: 38px; font-weight: 700; line-height: 1.2;
+  margin-bottom: 8px; letter-spacing: -0.02em;
+}
+.slide-title span { color: var(--primary-light); }
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.slide-subtitle {
+  font-size: 15px; color: var(--text-muted); line-height: 1.6;
+  margin-bottom: 24px; max-width: 700px;
+}
+
+/* ===== Slide 1 - Cover ===== */
+#slide-1 { background: linear-gradient(135deg, #0a0a1a 55%, #0f0a2e 85%, #0a1628); }
+#slide-1 .cover-grid {
+  display: grid; grid-template-columns: 1fr 1fr; height: 100%; align-items: center; gap: 40px;
+}
+#slide-1 .cover-left { display: flex; flex-direction: column; justify-content: center; }
+#slide-1 .logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+#slide-1 .logo-icon {
+  width: 50px; height: 50px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+#slide-1 .logo-badge {
+  font-size: 13px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.08em;
+}
+#slide-1 .logo-sub { font-size: 10px; color: var(--text-muted); }
+#slide-1 h1 { font-size: 52px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+#slide-1 .tagline { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 32px; max-width: 440px; }
+#slide-1 .badges { display: flex; gap: 10px; flex-wrap: wrap; }
+.badge {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 5px 12px;
+  font-size: 11.5px; color: var(--text-muted);
+}
+.badge.hl { border-color: rgba(124,92,252,0.3); color: var(--primary-light); background: rgba(124,92,252,0.08); }
+#slide-1 .cover-right { display: flex; align-items: center; justify-content: center; }
+.hero-visual { width: 360px; height: 360px; position: relative; }
+.pulse-ring {
+  position: absolute; border-radius: 50%;
+  border: 2px solid rgba(124,92,252,0.12);
+  animation: pulse 3.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100%{transform:scale(1);opacity:0.4}
+  50%{transform:scale(1.07);opacity:1}
+}
+.center-node {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 100px; height: 100px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(124,92,252,0.25), rgba(6,182,212,0.2));
+  border: 2px solid rgba(124,92,252,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  box-shadow: 0 0 40px rgba(124,92,252,0.2);
+}
+.orbit-node {
+  position: absolute; width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  top: 50%; left: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+@keyframes orbit1 { from{transform:rotate(0deg) translateX(140px) rotate(0deg)} to{transform:rotate(360deg) translateX(140px) rotate(-360deg)} }
+@keyframes orbit2 { from{transform:rotate(120deg) translateX(140px) rotate(-120deg)} to{transform:rotate(480deg) translateX(140px) rotate(-480deg)} }
+@keyframes orbit3 { from{transform:rotate(240deg) translateX(140px) rotate(-240deg)} to{transform:rotate(600deg) translateX(140px) rotate(-600deg)} }
+
+/* ===== Slide 2 - Problem ===== */
+#slide-2 { background: var(--dark); }
+.problem-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 4px; }
+.problem-card {
+  background: var(--dark3); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px 20px;
+  transition: transform 0.2s, border-color 0.2s;
+  position: relative; overflow: hidden;
+}
+.problem-card:hover { transform: translateY(-3px); border-color: rgba(124,92,252,0.4); }
+.problem-card .pc-num { font-size: 42px; font-weight: 800; line-height: 1; color: rgba(124,92,252,0.1); margin-bottom: 10px; }
+.problem-card .pc-icon { font-size: 26px; margin-bottom: 10px; }
+.problem-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.problem-card p { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
+.problem-card .pc-before {
+  margin-top: 12px; padding: 8px 12px; border-radius: 8px;
+  background: rgba(244,114,182,0.08); border-left: 3px solid var(--accent);
+  font-size: 11.5px; color: var(--accent); line-height: 1.5;
+}
+
+/* ===== Slide 3 - What is MCP ===== */
+#slide-3 { background: linear-gradient(135deg, #0a0a1a 60%, #0f0a28); }
+#slide-3 .mcp-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 8px; }
+.mcp-desc { font-size: 14px; color: var(--text-muted); line-height: 1.8; }
+.mcp-desc strong { color: var(--primary-light); }
+.mcp-arch {
+  background: rgba(124,92,252,0.04); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px;
+}
+.mcp-arch .arch-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 20px; }
+.arch-row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 14px; }
+.arch-box {
+  background: var(--dark3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 20px; text-align: center;
+  font-size: 13px; font-weight: 600;
+}
+.arch-box.client { border-left: 3px solid var(--secondary); flex: 1; }
+.arch-box.server { border-left: 3px solid var(--primary); flex: 1; }
+.arch-arrow { color: var(--text-muted); font-size: 20px; flex-shrink: 0; }
+.arch-box .ab-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 3px; }
+.mcp-servers-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+.mcp-server-tag {
+  padding: 5px 12px; border-radius: 6px; font-size: 11px;
+  background: rgba(124,92,252,0.1); border: 1px solid rgba(124,92,252,0.2);
+  color: var(--primary-light);
+}
+
+/* ===== Slide 4 - Three Primitives ===== */
+#slide-4 { background: var(--dark); }
+.primitives-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-top: 4px; }
+.primitive-card {
+  background: var(--dark3); border: 1px solid var(--border);
+  border-radius: 14px; padding: 26px 22px; text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.primitive-card:hover { transform: translateY(-4px); }
+.primitive-card.tools:hover { border-color: rgba(6,182,212,0.5); }
+.primitive-card.resources:hover { border-color: rgba(16,185,129,0.5); }
+.primitive-card.prompts:hover { border-color: rgba(244,114,182,0.5); }
+.primitive-card .pm-icon {
+  width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.primitive-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.primitive-card p { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+.primitive-card .pm-example {
+  margin-top: 14px; padding: 10px 14px; border-radius: 8px;
+  background: rgba(0,0,0,0.3); font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+  font-size: 11px; color: var(--text-muted); text-align: left; line-height: 1.5;
+}
+
+/* ===== Slide 5 - Architecture ===== */
+#slide-5 { background: linear-gradient(135deg, #0a0a1a 50%, #0a1620); }
+.arch-diagram { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; align-items: center; }
+.arch-layer { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 900px; }
+.arch-layer-label {
+  width: 80px; text-align: right; font-size: 11px; color: var(--text-muted); flex-shrink: 0;
+  text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+}
+.arch-layer-content { display: flex; gap: 10px; flex: 1; justify-content: center; flex-wrap: wrap; }
+.arch-layer-box {
+  padding: 10px 18px; border-radius: 10px; font-size: 12.5px; font-weight: 600;
+  background: var(--dark3); border: 1px solid var(--border);
+}
+.arch-layer-box.app { border-color: rgba(6,182,212,0.4); color: var(--secondary); }
+.arch-layer-box.protocol { border-color: rgba(124,92,252,0.4); color: var(--primary-light); }
+.arch-layer-box.server { border-color: rgba(16,185,129,0.4); color: var(--green); }
+.arch-connector { display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--text-muted); font-size: 11px; }
+.arch-connector-line { width: 2px; height: 20px; background: var(--border); }
+
+/* ===== Slide 6,7,8 - Use Cases ===== */
+#slide-6, #slide-7, #slide-8 { background: var(--dark); }
+.use-case-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 8px; align-items: start; }
+.use-case-desc h3 { font-size: 18px; margin-bottom: 8px; }
+.use-case-desc h3.uc-academia { color: var(--secondary); }
+.use-case-desc h3.uc-work { color: var(--green); }
+.use-case-desc h3.uc-life { color: var(--accent); }
+.use-case-desc .uc-scenario {
+  border-radius: 12px; padding: 16px 18px; margin-top: 14px; font-size: 13px; color: var(--text-muted); line-height: 1.7;
+}
+.uc-scenario.academia { background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.2); }
+.uc-scenario.work { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); }
+.uc-scenario.life { background: rgba(244,114,182,0.06); border: 1px solid rgba(244,114,182,0.2); }
+.use-case-flow { display: flex; flex-direction: column; gap: 10px; }
+.uc-step {
+  display: flex; gap: 12px; align-items: center;
+  background: var(--dark3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px; font-size: 13px;
+}
+.uc-step-num {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+}
+.uc-step-num.academia { background: rgba(6,182,212,0.15); color: var(--secondary); }
+.uc-step-num.work { background: rgba(16,185,129,0.15); color: var(--green); }
+.uc-step-num.life { background: rgba(244,114,182,0.15); color: var(--accent); }
+.uc-step .uc-step-text { flex: 1; }
+.uc-step .uc-step-text strong { color: var(--text); }
+.uc-step .uc-step-text .sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+.uc-arrow { text-align: center; color: var(--text-muted); font-size: 14px; margin: -4px 0; }
+.mcp-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.mcp-tag {
+  padding: 4px 10px; border-radius: 6px; font-size: 11px;
+}
+.mcp-tag.t1 { background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.2); color: var(--secondary); }
+.mcp-tag.t2 { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--green); }
+.mcp-tag.t3 { background: rgba(244,114,182,0.1); border: 1px solid rgba(244,114,182,0.2); color: var(--accent); }
+.mcp-tag.t4 { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: var(--orange); }
+.mcp-tag.t5 { background: rgba(124,92,252,0.1); border: 1px solid rgba(124,92,252,0.2); color: var(--primary-light); }
+
+/* ===== Slide 9 - Live Demo ===== */
+#slide-9 { background: linear-gradient(135deg, #0a0a1a 50%, #0a0f20); }
+.demo-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 8px; height: calc(100% - 100px); }
+.demo-chat, .demo-output {
+  background: var(--dark3); border: 1px solid var(--border); border-radius: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.demo-chat-header, .demo-output-header {
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;
+}
+.dc-dot { width: 8px; height: 8px; border-radius: 50%; }
+.demo-chat-body, .demo-output-body { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.demo-msg {
+  padding: 10px 14px; border-radius: 10px; font-size: 12.5px; line-height: 1.6; max-width: 90%;
+}
+.demo-msg.user { background: rgba(124,92,252,0.15); align-self: flex-end; color: var(--text); }
+.demo-msg.ai { background: rgba(6,182,212,0.08); align-self: flex-start; color: var(--text); border: 1px solid rgba(6,182,212,0.15); }
+.demo-msg.tool {
+  background: rgba(16,185,129,0.08); align-self: flex-start;
+  border: 1px solid rgba(16,185,129,0.2); border-radius: 8px;
+  font-family: 'Cascadia Code','Fira Code',monospace; font-size: 11px; color: var(--green);
+}
+.demo-msg .msg-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;
+}
+.tool-call-card {
+  background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.15);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+}
+.tool-call-card .tc-header { font-size: 12px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.tool-call-card .tc-params { font-family: 'Cascadia Code',monospace; font-size: 11px; color: var(--text-muted); }
+.tool-call-card .tc-result { font-size: 11.5px; color: var(--text-muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); }
+.tool-status { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; }
+.tool-status.success { background: var(--green); }
+.tool-status.running { background: var(--orange); animation: blink 0.8s infinite; }
+@keyframes blink { 50%{opacity:0.3} }
+
+/* ===== Slide 10 - Ecosystem ===== */
+#slide-10 { background: var(--dark); }
+.eco-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 8px; align-items: start; }
+.eco-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.eco-stat {
+  background: var(--dark3); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px; text-align: center;
+}
+.eco-stat .es-num { font-size: 32px; font-weight: 800; }
+.eco-stat .es-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.eco-adopters { display: flex; flex-direction: column; gap: 10px; }
+.eco-adopter {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--dark3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px; font-size: 13px;
+}
+.eco-adopter .ea-icon {
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.eco-adopter .ea-name { font-weight: 600; }
+.eco-adopter .ea-desc { font-size: 11px; color: var(--text-muted); }
+
+/* ===== Slide 11 - Quick Start ===== */
+#slide-11 { background: var(--dark); }
+.code-block {
+  background: #010314; border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 22px;
+  font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+  font-size: 11.5px; line-height: 1.75;
+  overflow: hidden;
+}
+.code-block .cb-head { display: flex; gap: 7px; margin-bottom: 12px; align-items: center; }
+.cb-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cb-dot.r{background:#ff5f57} .cb-dot.y{background:#febc2e} .cb-dot.g{background:#28c840}
+.code-kw { color: #ff7b72; }
+.code-fn { color: #d2a8ff; }
+.code-st { color: #a5d6ff; }
+.code-cm { color: #6e7681; }
+.code-num { color: #79c0ff; }
+.code-json-key { color: #d2a8ff; }
+.code-json-val { color: #a5d6ff; }
+
+/* ===== Slide 12 - Tips ===== */
+#slide-12 { background: linear-gradient(135deg, #0a0a1a 50%, #0a1a12); }
+.tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+.tip-card {
+  background: var(--dark3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start;
+}
+.tip-card .tip-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.tip-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.tip-card p { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
+/* ===== Slide 13 - Summary ===== */
+#slide-13 { background: linear-gradient(135deg, #0a0a1a 30%, #0f0a28 70%); }
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; height: 100%;
+}
+.summary-left { display: flex; flex-direction: column; justify-content: center; }
+.summary-right { display: flex; flex-direction: column; gap: 12px; }
+.summary-point {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+}
+.summary-point .sp-num {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+}
+.summary-point h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.summary-point p { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff; font-weight: 700; font-size: 14px;
+  border: none; border-radius: 12px; padding: 13px 26px; cursor: pointer;
+  text-decoration: none; margin-top: 10px; width: fit-content;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,92,252,0.35); }
+
+/* ===== Responsive ===== */
+@media (max-width: 1300px) {
+  .slide { transform: translateX(60px) scale(0.78); }
+  .slide.active { transform: translateX(0) scale(0.78); }
+}
+@media (max-width: 960px) {
+  .slide { transform: translateX(40px) scale(0.55); }
+  .slide.active { transform: translateX(0) scale(0.55); }
+  #toolbar { top: 8px; right: 8px; }
+  .tb-btn { font-size: 10px; padding: 4px 8px; }
+}
+@media (max-width: 640px) {
+  .slide { transform: translateX(30px) scale(0.38); }
+  .slide.active { transform: translateX(0) scale(0.38); }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar" style="width:7.7%"></div>
+
+<div id="presentation">
+
+<!-- ===== SLIDE 1: Cover ===== -->
+<div class="slide active" id="slide-1">
+  <div class="top-bar"></div>
+  <div class="slide-inner" style="padding:0;">
+    <div class="cover-grid" style="padding:48px 60px;">
+      <div class="cover-left">
+        <div class="logo-row">
+          <div class="logo-icon">🔌</div>
+          <div>
+            <div class="logo-badge">MCP</div>
+            <div class="logo-sub">Model Context Protocol</div>
+          </div>
+        </div>
+        <h1>AI 的<span class="gradient-text">"USB-C 接口"</span></h1>
+        <p class="tagline">一个开放协议，让 AI 从"只会聊天"变成"真正能干活的助手"——就像 USB-C 统一了所有设备的连接方式，MCP 统一了 AI 与外部工具的交互标准。</p>
+        <div class="badges">
+          <div class="badge hl">🌐 开放协议</div>
+          <div class="badge">Anthropic 2024.11 发布</div>
+          <div class="badge">500+ MCP Server</div>
+          <div class="badge">Claude · Gemini · OpenAI 全支持</div>
+        </div>
+      </div>
+      <div class="cover-right">
+        <div class="hero-visual">
+          <div class="pulse-ring" style="width:320px;height:320px;top:20px;left:20px;animation-delay:0s;"></div>
+          <div class="pulse-ring" style="width:250px;height:250px;top:55px;left:55px;animation-delay:1s;"></div>
+          <div class="pulse-ring" style="width:180px;height:180px;top:90px;left:90px;animation-delay:2s;"></div>
+          <div class="center-node">🧠</div>
+          <div class="orbit-node" style="background:rgba(6,182,212,0.15);animation:orbit1 8s linear infinite;">📁</div>
+          <div class="orbit-node" style="background:rgba(16,185,129,0.15);animation:orbit2 8s linear infinite;">🗄️</div>
+          <div class="orbit-node" style="background:rgba(244,114,182,0.15);animation:orbit3 8s linear infinite;">🌐</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2: Problem ===== -->
+<div class="slide" id="slide-2">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">🤔 背景</div>
+    <h2 class="slide-title">AI 很聪明，但像个"有大脑没手脚"的天才</h2>
+    <p class="slide-subtitle">大模型能理解一切、生成一切——但一旦需要查数据库、读文件、发邮件，就得你来当"人工 API"</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="pc-num">01</div>
+        <div class="pc-icon">🔒</div>
+        <h3>数据孤岛</h3>
+        <p>AI 无法直接访问数据库、文件、日历，每次都要手动复制粘贴数据给它。</p>
+        <div class="pc-before">痛点：导出 CSV → 手动粘贴 → AI 分析</div>
+      </div>
+      <div class="problem-card">
+        <div class="pc-num">02</div>
+        <div class="pc-icon">🧩</div>
+        <h3>集成碎片化</h3>
+        <p>每个工具 API 不同，开发者要为每个 AI 平台单独适配，没有统一标准。</p>
+        <div class="pc-before">痛点：Claude 插件写一遍，ChatGPT 插件再写一遍</div>
+      </div>
+      <div class="problem-card">
+        <div class="pc-num">03</div>
+        <div class="pc-icon">📋</div>
+        <h3>上下文断裂</h3>
+        <p>每次对话都是"失忆"的，AI 不知道你的项目结构、偏好、历史。</p>
+        <div class="pc-before">痛点：每次都要重新解释一遍背景</div>
+      </div>
+      <div class="problem-card">
+        <div class="pc-num">04</div>
+        <div class="pc-icon">🔄</div>
+        <h3>工作流断层</h3>
+        <p>AI 生成 → 你手动粘贴 → 运行 → 报错 → 再贴回去。来回切换效率极低。</p>
+        <div class="pc-before">痛点：AI 只是个顾问，干活还得靠自己</div>
+      </div>
+      <div class="problem-card">
+        <div class="pc-num">05</div>
+        <div class="pc-icon">🔐</div>
+        <h3>安全与权限</h3>
+        <p>想让 AI 操作文件，又怕它乱删。缺乏细粒度权限控制。</p>
+        <div class="pc-before">痛点：要么全不给权限，要么全开放不安全</div>
+      </div>
+      <div class="problem-card">
+        <div class="pc-num">06</div>
+        <div class="pc-icon">📈</div>
+        <h3>无法规模化</h3>
+        <p>个人用还行，团队/企业级 AI 应用需要标准化的工具接入方式。</p>
+        <div class="pc-before">痛点：每个需求都定制开发，成本极高</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3: What is MCP ===== -->
+<div class="slide" id="slide-3">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">💡 解决方案</div>
+    <h2 class="slide-title">MCP = AI 世界的 <span>USB-C 标准</span></h2>
+    <p class="slide-subtitle">就像 USB-C 让所有设备用同一个接口充电和传数据，MCP 让所有 AI 用同一种方式连接工具和数据源</p>
+    <div class="mcp-layout">
+      <div>
+        <p class="mcp-desc">
+          <strong>Model Context Protocol (MCP)</strong> 是一个<strong>开放协议</strong>，由 Anthropic 于 2024 年 11 月发布。<br><br>
+          它定义了 AI 与外部工具之间的<strong>标准化通信方式</strong>——基于 JSON-RPC 2.0，通过 stdio 或 HTTP 流式传输（2026 新版支持）。<br><br>
+          核心理念：<strong>写一次 MCP Server，所有 AI 客户端都能用。</strong><br>
+          Claude Code、Cursor、Gemini CLI、OpenAI Agents SDK 等全部支持。
+        </p>
+      </div>
+      <div class="mcp-arch">
+        <div class="arch-title">📐 MCP 架构示意</div>
+        <div class="arch-row">
+          <div class="arch-box client">
+            🤖 AI 客户端<br><span class="ab-sub">Claude / Gemini / Cursor ...</span>
+          </div>
+          <div class="arch-arrow">⟷</div>
+          <div class="arch-box server">
+            🔧 MCP Server<br><span class="ab-sub">标准化工具接口</span>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:13px;color:var(--text-muted);margin:12px 0;">↓ MCP Server 可以连接 ↓</div>
+        <div class="mcp-servers-row">
+          <div class="mcp-server-tag">🗄️ 数据库</div>
+          <div class="mcp-server-tag">📁 文件系统</div>
+          <div class="mcp-server-tag">🌐 API 服务</div>
+          <div class="mcp-server-tag">📧 邮件/日历</div>
+          <div class="mcp-server-tag">🔍 搜索引擎</div>
+          <div class="mcp-server-tag">💻 终端命令</div>
+          <div class="mcp-server-tag">🐙 GitHub</div>
+          <div class="mcp-server-tag">📊 数据分析</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4: Three Primitives ===== -->
+<div class="slide" id="slide-4">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">🧬 协议核心</div>
+    <h2 class="slide-title">MCP 的三大原语：Tools / Resources / Prompts</h2>
+    <p class="slide-subtitle">整个协议围绕这三个概念展开——简单但强大，覆盖 AI 与外部交互的所有模式</p>
+    <div class="primitives-grid">
+      <div class="primitive-card tools">
+        <div class="pm-icon" style="background:rgba(6,182,212,0.12);">🔧</div>
+        <h3 style="color:var(--secondary);">Tools（工具）</h3>
+        <p>AI 可调用的函数——每个工具定义名称、描述、输入/输出 JSON Schema。AI 自己决定何时调用什么工具，像人一样"使用工具"。</p>
+        <div class="pm-example"><span style="color:var(--secondary);">"search_weather"</span><br>→ 输入：{ city: "上海" }<br>← 输出：{ temp: 26, condition: "晴" }</div>
+      </div>
+      <div class="primitive-card resources">
+        <div class="pm-icon" style="background:rgba(16,185,129,0.12);">📂</div>
+        <h3 style="color:var(--green);">Resources（资源）</h3>
+        <p>AI 可读取的结构化数据——文件内容、数据库 schema、API 文档。资源可动态更新，AI 按需拉取，像人一样"查阅资料"。</p>
+        <div class="pm-example"><span style="color:var(--green);">"project://src/schema.ts"</span><br>→ 返回文件内容<br><span style="color:var(--green);">"db://users/table_info"</span><br>→ 返回表结构</div>
+      </div>
+      <div class="primitive-card prompts">
+        <div class="pm-icon" style="background:rgba(244,114,182,0.12);">💬</div>
+        <h3 style="color:var(--accent);">Prompts（提示模板）</h3>
+        <p>预定义的对话模板——引导 AI 如何使用工具、格式化输出。包含参数，动态生成上下文，像给 AI 一份"标准作业流程"。</p>
+        <div class="pm-example"><span style="color:var(--accent);">"summarize_recent"</span><br>→ 模板："总结最近 {days} 天<br>  的 {topic} 相关内容"<br>← AI 按模板整理输出</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5: Architecture ===== -->
+<div class="slide" id="slide-5">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">🏗️ 架构</div>
+    <h2 class="slide-title">从输入到执行：MCP 的完整调用链路</h2>
+    <p class="slide-subtitle">一次典型的 MCP 调用是怎么跑通的——三层架构，松耦合，高复用</p>
+    <div class="arch-diagram">
+      <div class="arch-layer">
+        <div class="arch-layer-label">应用层</div>
+        <div class="arch-layer-content">
+          <div class="arch-layer-box app">Claude Code</div>
+          <div class="arch-layer-box app">Cursor</div>
+          <div class="arch-layer-box app">Gemini CLI</div>
+          <div class="arch-layer-box app">OpenAI SDK</div>
+          <div class="arch-layer-box app">Zed / Windsurf</div>
+        </div>
+      </div>
+      <div class="arch-connector"><div class="arch-connector-line"></div><span>JSON-RPC 2.0 over stdio / Streamable HTTP</span><div class="arch-connector-line"></div></div>
+      <div class="arch-layer">
+        <div class="arch-layer-label">协议层</div>
+        <div class="arch-layer-content">
+          <div class="arch-layer-box protocol">tools/list</div>
+          <div class="arch-layer-box protocol">tools/call</div>
+          <div class="arch-layer-box protocol">resources/read</div>
+          <div class="arch-layer-box protocol">prompts/get</div>
+        </div>
+      </div>
+      <div class="arch-connector"><div class="arch-connector-line"></div><span>任意后端实现（Python / TS / Go / Rust）</span><div class="arch-connector-line"></div></div>
+      <div class="arch-layer">
+        <div class="arch-layer-label">服务层</div>
+        <div class="arch-layer-content">
+          <div class="arch-layer-box server">🗄️ PostgreSQL</div>
+          <div class="arch-layer-box server">📁 Filesystem</div>
+          <div class="arch-layer-box server">🌐 Brave Search</div>
+          <div class="arch-layer-box server">🐙 GitHub</div>
+          <div class="arch-layer-box server">📧 Gmail</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:24px;text-align:center;font-size:12px;color:var(--text-muted);line-height:1.8;">
+      <strong style="color:var(--primary-light);">关键设计：</strong>
+      ① 客户端只和 MCP 协议通信，不关心实现 &nbsp;|&nbsp;
+      ② 一个 Server 被所有客户端复用 &nbsp;|&nbsp;
+      ③ 权限由用户授予，AI 不能越权
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6: Use Case - 论文写作 ===== -->
+<div class="slide" id="slide-6">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">📝 使用案例一</div>
+    <h2 class="slide-title">论文写作：一条指令完成半天的文献工作</h2>
+    <p class="slide-subtitle">接入 arXiv Search + Filesystem + Zotero 三个 MCP Server，AI 自动查文献、读论文、查重、生成综述</p>
+    <div class="use-case-layout">
+      <div class="use-case-desc">
+        <h3 class="uc-academia">🎯 场景</h3>
+        <div class="uc-scenario academia">
+          <strong>用户输入：</strong><br>
+          "想写 Transformer 注意力机制优化的综述，找近一年引用最高的 5 篇论文，总结核心方法和贡献，检查本地 Zotero 库里是否已有，避免重复，最后生成文献综述初稿保存为 draft.md。"
+        </div>
+        <div class="mcp-tags">
+          <span style="font-size:12px;color:var(--text-muted);margin-right:4px;">🔌 MCP Server：</span>
+          <span class="mcp-tag t1">arXiv Search</span>
+          <span class="mcp-tag t2">Filesystem</span>
+          <span class="mcp-tag t3">Zotero</span>
+        </div>
+      </div>
+      <div class="use-case-flow">
+        <div class="uc-step"><div class="uc-step-num academia">1</div><div class="uc-step-text"><strong>搜索论文</strong><div class="sub">arXiv MCP → API 搜索 "transformer attention optimization"，返回 Top 5</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num academia">2</div><div class="uc-step-text"><strong>查重检查</strong><div class="sub">Zotero MCP → 读取本地文献库，DOI/标题比对，标记已存在</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num academia">3</div><div class="uc-step-text"><strong>获取 & 阅读</strong><div class="sub">获取摘要和全文 → AI 分析每篇的核心方法、创新点、实验结果</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num academia">4</div><div class="uc-step-text"><strong>生成综述</strong><div class="sub">Filesystem MCP → 对比分析 + 研究趋势 + 参考文献 → paper_review_draft.md</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7: Use Case - 工作数据处理 ===== -->
+<div class="slide" id="slide-7">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">💼 使用案例二</div>
+    <h2 class="slide-title">工作场景：数据库查询 → 生成报表 → 发送通知，一气呵成</h2>
+    <p class="slide-subtitle">接入 PostgreSQL + Google Sheets + Slack 三个 MCP Server，告别手动拉数据做周报的日子</p>
+    <div class="use-case-layout">
+      <div class="use-case-desc">
+        <h3 class="uc-work">🎯 场景</h3>
+        <div class="uc-scenario work">
+          <strong>用户输入：</strong><br>
+          "从生产数据库提取上周各产品线的销售数据，按区域汇总，对比上上周计算增长率，生成 Markdown 周报，把摘要发到团队 Slack #weekly-report 频道。"
+        </div>
+        <div class="mcp-tags">
+          <span style="font-size:12px;color:var(--text-muted);margin-right:4px;">🔌 MCP Server：</span>
+          <span class="mcp-tag t2">PostgreSQL</span>
+          <span class="mcp-tag t4">Google Sheets</span>
+          <span class="mcp-tag t5">Slack</span>
+        </div>
+      </div>
+      <div class="use-case-flow">
+        <div class="uc-step"><div class="uc-step-num work">1</div><div class="uc-step-text"><strong>SQL 查询</strong><div class="sub">PostgreSQL MCP → 聚合查询各产品线、各区域销售数据</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num work">2</div><div class="uc-step-text"><strong>同比计算</strong><div class="sub">再查上上周 → AI 自动计算增长率、排名变化、异常标记</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num work">3</div><div class="uc-step-text"><strong>生成报表</strong><div class="sub">AI 整理 Markdown 周报 + Google Sheets MCP → 写入在线表格</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num work">4</div><div class="uc-step-text"><strong>推送通知</strong><div class="sub">Slack MCP → 发送摘要 + Google Sheets 链接到 #weekly-report</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8: Use Case - 生活运动 ===== -->
+<div class="slide" id="slide-8">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">🏃 使用案例三</div>
+    <h2 class="slide-title">生活场景：运动计划 + 天气 + 日历，智能调整每日安排</h2>
+    <p class="slide-subtitle">接入 Calendar + Weather + Health 三个 MCP Server，让 AI 做你的私人运动管家</p>
+    <div class="use-case-layout">
+      <div class="use-case-desc">
+        <h3 class="uc-life">🎯 场景</h3>
+        <div class="uc-scenario life">
+          <strong>用户输入：</strong><br>
+          "这周安排了三次跑步训练，帮我查下周天气，如果哪天会下雨就提前调到室内运动日。同时检查日历，避开会议时间，把调整后的计划更新到日历里。"
+        </div>
+        <div class="mcp-tags">
+          <span style="font-size:12px;color:var(--text-muted);margin-right:4px;">🔌 MCP Server：</span>
+          <span class="mcp-tag t3">Calendar</span>
+          <span class="mcp-tag t1">Weather</span>
+          <span class="mcp-tag t2">Health</span>
+        </div>
+      </div>
+      <div class="use-case-flow">
+        <div class="uc-step"><div class="uc-step-num life">1</div><div class="uc-step-text"><strong>读取运动计划</strong><div class="sub">Calendar MCP → 查询本周标记为"跑步训练"的事件</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num life">2</div><div class="uc-step-text"><strong>天气分析</strong><div class="sub">Weather MCP → 查询每个训练日 + 时段的天气（温度、降雨概率）</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num life">3</div><div class="uc-step-text"><strong>冲突检测 & 调整</strong><div class="sub">AI 标记降雨日 → 改为室内训练 → 避开已有会议时段</div></div></div>
+        <div class="uc-arrow">↓</div>
+        <div class="uc-step"><div class="uc-step-num life">4</div><div class="uc-step-text"><strong>更新日历</strong><div class="sub">Calendar MCP 写入调整后的安排 + Health MCP 同步 Apple Health</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9: Live Demo ===== -->
+<div class="slide" id="slide-9">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">🎬 现场演示</div>
+    <h2 class="slide-title">一次真实的 MCP 工具调用全记录</h2>
+    <p class="slide-subtitle">左边：用户对话 &nbsp;|&nbsp; 右边：MCP 后台实际发生的工具调用——看看 AI 到底在背后做了什么</p>
+    <div class="demo-layout">
+      <div class="demo-chat">
+        <div class="demo-chat-header"><div class="dc-dot" style="background:var(--secondary);"></div>Claude Code · 已连接 3 个 MCP Server</div>
+        <div class="demo-chat-body">
+          <div class="demo-msg user"><div class="msg-label" style="color:var(--secondary);">👤 用户</div>帮我查一下上海周末的天气，如果我周六有户外跑步的安排，给我建议</div>
+          <div class="demo-msg ai"><div class="msg-label" style="color:var(--primary-light);">🤖 AI</div>好的，我需要同时查两件事：你的周末日历安排和上海周末天气。</div>
+          <div class="demo-msg tool"><div class="msg-label">⚡ MCP Call</div>calendar_mcp → events_list({ days: 7 })</div>
+          <div class="demo-msg tool"><div class="msg-label">⚡ MCP Call</div>weather_mcp → get_forecast({ city: "上海", days: 3 })</div>
+          <div class="demo-msg ai"><div class="msg-label" style="color:var(--primary-light);">🤖 AI</div>查到了！<br><br>📅 周六 8:00-9:00 "户外跑步 5km"<br>🌧️ 周六预报：小雨 18-22°C，降雨概率 75%<br><br><strong>建议：</strong>提前到周五傍晚（晴 24°C），或者改为室内跑步机。要我帮你更新日历吗？</div>
+        </div>
+      </div>
+      <div class="demo-output">
+        <div class="demo-output-header">🔍 后台工具调用详情</div>
+        <div class="demo-output-body">
+          <div class="tool-call-card">
+            <div class="tc-header"><span class="tool-status success"></span>calendar_mcp.events_list</div>
+            <div class="tc-params">→ { "timeMin": "2026-06-01", "maxResults": 10 }</div>
+            <div class="tc-result">← 返回 5 个事件 | 命中：周六 8:00 "户外跑步 5km"</div>
+          </div>
+          <div class="tool-call-card">
+            <div class="tc-header"><span class="tool-status success"></span>weather_mcp.get_forecast</div>
+            <div class="tc-params">→ { "city": "上海", "days": 3 }</div>
+            <div class="tc-result">← 周五 🌤️ 24°C | 周六 🌧️ 18°C 75%降雨 | 周日 ⛅ 21°C</div>
+          </div>
+          <div style="margin-top:16px;padding:12px;background:rgba(124,92,252,0.06);border-radius:10px;border:1px solid rgba(124,92,252,0.15);">
+            <div style="font-size:12px;font-weight:700;color:var(--primary-light);margin-bottom:6px;">🧠 AI 推理过程</div>
+            <div style="font-size:11.5px;color:var(--text-muted);line-height:1.7;">
+              1. 用户提到"周末"+"户外跑步"→ 需要日历数据<br>
+              2. 用户问了"天气"→ 需要天气数据<br>
+              3. 两个查询互不依赖 → <strong style="color:var(--secondary);">并行调用 MCP</strong><br>
+              4. 结果交叉比对 → 发现冲突 → 主动给建议
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10: Ecosystem ===== -->
+<div class="slide" id="slide-10">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">📊 生态现状</div>
+    <h2 class="slide-title">2026 年：MCP 已成 AI 工具链的事实标准</h2>
+    <p class="slide-subtitle">从个人开发者到企业级应用，MCP 生态正在爆发式增长</p>
+    <div class="eco-layout">
+      <div>
+        <div class="eco-stats">
+          <div class="eco-stat">
+            <div class="es-num gradient-text">500+</div>
+            <div class="es-label">可用 MCP Server</div>
+          </div>
+          <div class="eco-stat">
+            <div class="es-num gradient-text">120K ⭐</div>
+            <div class="es-label">awesome-mcp-servers</div>
+          </div>
+          <div class="eco-stat">
+            <div class="es-num gradient-text">40+</div>
+            <div class="es-label">覆盖类别（数据库/文件/云/搜索…）</div>
+          </div>
+          <div class="eco-stat">
+            <div class="es-num gradient-text">15+</div>
+            <div class="es-label">AI 客户端原生支持</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;font-size:12px;color:var(--text-muted);line-height:1.7;">
+          🏢 <strong style="color:var(--text);">企业落地：</strong>DDG 内部 30 个 MCP Server、300+ 工具，Slack Agent 覆盖 30% 员工<br>
+          📋 <strong style="color:var(--text);">MCP 2026-07 大版本：</strong>无状态协议核心、App 扩展（HTML UI）、OAuth 2.0、任务框架正式化<br>
+          🌐 <strong style="color:var(--text);">社区资源：</strong>lobehub.com/mcp · smithery.ai · glama.ai/mcp-server · pulseMCP
+        </div>
+      </div>
+      <div class="eco-adopters">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">支持 MCP 的主流 AI 客户端</div>
+        <div class="eco-adopter"><div class="ea-icon" style="background:rgba(124,92,252,0.12);">🟣</div><div><div class="ea-name">Claude Code / Desktop</div><div class="ea-desc">Anthropic 官方，MCP 深度原生集成</div></div></div>
+        <div class="eco-adopter"><div class="ea-icon" style="background:rgba(6,182,212,0.12);">🔵</div><div><div class="ea-name">Cursor</div><div class="ea-desc">mcp.json 配置，一键接入任意 Server</div></div></div>
+        <div class="eco-adopter"><div class="ea-icon" style="background:rgba(16,185,129,0.12);">🟢</div><div><div class="ea-name">Gemini CLI</div><div class="ea-desc">Google 官方终端 Agent，MCP 一等公民</div></div></div>
+        <div class="eco-adopter"><div class="ea-icon" style="background:rgba(244,114,182,0.12);">🟡</div><div><div class="ea-name">OpenAI Agents SDK</div><div class="ea-desc">官方 MCP 支持，GPT 系列可直接使用</div></div></div>
+        <div class="eco-adopter"><div class="ea-icon" style="background:rgba(245,158,11,0.12);">🟠</div><div><div class="ea-name">Zed / Windsurf / Codex CLI</div><div class="ea-desc">新一代编辑器全部原生支持 MCP</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11: Quick Start ===== -->
+<div class="slide" id="slide-11">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">⚡ 快速上手</div>
+    <h2 class="slide-title">3 步给 Claude Code 装上 MCP</h2>
+    <p class="slide-subtitle">以接入天气查询和文件系统为例，30 秒完成配置</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">📋 Step 1: 添加 MCP Server</div>
+        <div class="code-block" style="margin-bottom:14px;">
+          <div class="cb-head"><div class="cb-dot r"></div><div class="cb-dot y"></div><div class="cb-dot g"></div><span style="font-size:10px;color:var(--text-muted);margin-left:6px;">终端</span></div>
+<span class="code-cm"># 添加天气查询 MCP Server</span>
+<span class="code-fn">claude mcp add</span> weather -- npx -y @h1deya/mcp-server-weather
+
+<span class="code-cm"># 添加文件系统 MCP Server</span>
+<span class="code-fn">claude mcp add</span> filesystem -- npx -y @modelcontextprotocol/server-filesystem <span class="code-st">/path/to/allowed</span>
+
+<span class="code-cm"># 查看已添加的 Server</span>
+<span class="code-fn">claude mcp list</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">⚙️ Step 2: 自动生成的配置</div>
+        <div class="code-block" style="margin-bottom:14px;">
+          <div class="cb-head"><div class="cb-dot r"></div><div class="cb-dot y"></div><div class="cb-dot g"></div><span style="font-size:10px;color:var(--text-muted);margin-left:6px;">.claude/mcp.json</span></div>
+{
+  <span class="code-json-key">"mcpServers"</span>: {
+    <span class="code-json-key">"weather"</span>: {
+      <span class="code-json-key">"command"</span>: <span class="code-json-val">"npx"</span>,
+      <span class="code-json-key">"args"</span>: [<span class="code-json-val">"-y"</span>, <span class="code-json-val">"@h1deya/mcp-server-weather"</span>]
+    },
+    <span class="code-json-key">"filesystem"</span>: {
+      <span class="code-json-key">"command"</span>: <span class="code-json-val">"npx"</span>,
+      <span class="code-json-key">"args"</span>: [<span class="code-json-val">"-y"</span>, <span class="code-json-val">"@modelcontextprotocol/server-filesystem"</span>, <span class="code-json-val">"/path"</span>]
+    }
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;padding:14px 18px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;font-size:12.5px;color:var(--text-muted);">
+      <strong style="color:var(--green);">✅ Step 3: 直接用！</strong> 重启 Claude Code，AI 自动发现新工具。试试说 "帮我查上海天气" 或 "读一下 src/ 目录下的所有 .ts 文件"。
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12: Tips & Pitfalls ===== -->
+<div class="slide" id="slide-12">
+  <div class="top-bar"></div>
+  <div class="slide-inner">
+    <div class="label-tag">💡 经验分享</div>
+    <h2 class="slide-title">实际搭建 MCP 的踩坑和心得</h2>
+    <p class="slide-subtitle">我折腾过程中学到的——帮你少走弯路</p>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-icon" style="background:rgba(16,185,129,0.12);">✅</div>
+        <div><h4>从官方 Server 开始</h4><p>先装 @modelcontextprotocol 官方仓库的 Server（filesystem、github、postgres），验证链路跑通再自己写。</p></div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:rgba(245,158,11,0.12);">⚠️</div>
+        <div><h4>注意文件系统权限</h4><p>Filesystem MCP 启动时指定的目录就是 AI 能访问的全部范围。限定到项目目录，别把根目录给它。</p></div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:rgba(6,182,212,0.12);">💡</div>
+        <div><h4>工具描述决定 AI 表现</h4><p>MCP Server 的 tool description 写得好，AI 才懂得何时调用。要包含：功能、适用场景、参数含义。</p></div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:rgba(244,114,182,0.12);">🔧</div>
+        <div><h4>Python 用户用 FastMCP</h4><p>写自定义 MCP Server 推荐 FastMCP——5 行代码定义一个 tool，比自己撸 JSON-RPC 省心太多。</p></div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:rgba(245,158,11,0.12);">🐛</div>
+        <div><h4>调试技巧：看日志</h4><p>MCP 跑在 stdio 上，调试不方便。Claude Code 加 --debug 参数可以看到完整的 MCP 通信过程。</p></div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:rgba(16,185,129,0.12);">🚀</div>
+        <div><h4>组合多个 MCP 才是精髓</h4><p>单个 Server 能力有限，把 filesystem + github + postgres 连起来，AI 就能从需求到代码走完全链路。</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13: Summary ===== -->
+<div class="slide" id="slide-13">
+  <div class="top-bar"></div>
+  <div class="slide-inner" style="padding:48px 60px;">
+    <div class="summary-grid">
+      <div class="summary-left">
+        <div class="label-tag">🎯 总结</div>
+        <h2 class="slide-title" style="font-size:34px;">MCP = 让 AI 从<br><span class="gradient-text">"聊天工具"变成"工作伙伴"</span></h2>
+        <p class="slide-subtitle">开放协议 · 一次编写到处运行 · 生态爆发中</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-muted);"><span style="color:var(--green);font-size:15px;">✓</span> 统一标准：告别每个平台写一遍插件</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-muted);"><span style="color:var(--green);font-size:15px;">✓</span> 500+ 现成 Server：数据库到搜索引擎开箱即用</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-muted);"><span style="color:var(--green);font-size:15px;">✓</span> 全平台支持：Claude · Gemini · OpenAI · Cursor</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-muted);"><span style="color:var(--green);font-size:15px;">✓</span> 3 步接入：claude mcp add + 配置 + 直接用</div>
+        </div>
+        <a class="cta-btn" href="https://modelcontextprotocol.io" target="_blank">🔗 访问官方文档 modelcontextprotocol.io</a>
+      </div>
+      <div class="summary-right">
+        <div class="summary-point"><div class="sp-num">1</div><div><h4>动手试试</h4><p>装一个 Weather MCP + Filesystem MCP，体验 AI 真正"干活"的感觉</p></div></div>
+        <div class="summary-point"><div class="sp-num">2</div><div><h4>结合自己的工作流</h4><p>数据库查询、文档整理、日程管理——想想哪些重复劳动可以交给 MCP</p></div></div>
+        <div class="summary-point"><div class="sp-num">3</div><div><h4>关注 2026-07 大更新</h4><p>无状态协议、App 扩展、OAuth 2.0——MCP 最大版本升级即将到来</p></div></div>
+        <div class="summary-point"><div class="sp-num">4</div><div><h4>资源汇总</h4><p style="font-size:11px;">官网 modelcontextprotocol.io · awesome-mcp-servers (GitHub) · lobehub.com/mcp</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /presentation -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" onclick="changeSlide(-1)" title="上一页 (←)">‹</button>
+  <div class="dot-row" id="dot-row"></div>
+  <span id="slide-counter">1 / 13</span>
+  <button class="nav-btn" id="next-btn" onclick="changeSlide(1)" title="下一页 (→)">›</button>
+</div>
+
+<div id="toolbar">
+  <button class="tb-btn" id="fs-btn" onclick="toggleFullscreen()" title="全屏">⛶ 全屏</button>
+</div>
+
+<script>
+const TOTAL = 13;
+let current = 1;
+let animating = false;
+
+// Build dots
+const dotRow = document.getElementById('dot-row');
+for (let i = 1; i <= TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 1 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotRow.appendChild(d);
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent = current + ' / ' + TOTAL;
+  document.getElementById('prev-btn').disabled = current === 1;
+  document.getElementById('next-btn').disabled = current === TOTAL;
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i + 1 === current));
+  document.getElementById('progress-bar').style.width = ((current / TOTAL) * 100) + '%';
+}
+
+// Slide transition
+function goTo(next) {
+  if (next === current || animating || next < 1 || next > TOTAL) return;
+  animating = true;
+  const cur = document.getElementById('slide-' + current);
+  const nxt = document.getElementById('slide-' + next);
+  const goForward = next > current;
+
+  // Pre-position incoming slide
+  nxt.style.transition = 'none';
+  nxt.style.transform = goForward ? 'translateX(60px) scale(0.96)' : 'translateX(-60px) scale(0.96)';
+  nxt.style.opacity = '0';
+  nxt.classList.remove('active');
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      nxt.style.transition = '';
+      cur.style.transition = '';
+
+      cur.classList.remove('active');
+      cur.style.transform = goForward ? 'translateX(-60px) scale(0.96)' : 'translateX(60px) scale(0.96)';
+      cur.style.opacity = '0';
+
+      nxt.style.transform = 'translateX(0) scale(1)';
+      nxt.style.opacity = '1';
+      nxt.classList.add('active');
+
+      current = next;
+      updateUI();
+
+      setTimeout(() => {
+        cur.style.transform = '';
+        cur.style.opacity = '';
+        animating = false;
+      }, 550);
+    });
+  });
+}
+
+function changeSlide(dir) { goTo(current + dir); }
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    changeSlide(1);
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    changeSlide(-1);
+  }
+  if (e.key === 'Home') { e.preventDefault(); goTo(1); }
+  if (e.key === 'End') { e.preventDefault(); goTo(TOTAL); }
+  if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+});
+
+// Touch / swipe support
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].screenX - touchStartX;
+  const dy = e.changedTouches[0].screenY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    changeSlide(dx < 0 ? 1 : -1);
+  }
+});
+
+// Fullscreen toggle
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// Mouse wheel (debounced)
+let wheelTimeout;
+document.addEventListener('wheel', e => {
+  if (wheelTimeout) return;
+  wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 800);
+  if (Math.abs(e.deltaY) > 30) changeSlide(e.deltaY > 0 ? 1 : -1);
+}, { passive: true });
+
+updateUI();
+</script>
+</body>
+</html>
